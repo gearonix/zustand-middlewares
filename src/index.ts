@@ -1,16 +1,37 @@
-import { create }                 from 'zustand'
-import { Mutate }                 from 'zustand'
-import { StateCreator }           from 'zustand'
-import { StoreApi }               from 'zustand'
-import { StoreMutatorIdentifier } from 'zustand'
-import { UseBoundStore }          from 'zustand'
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-type TupleToUnion<T extends unknown[]> = T[number]
+import { merge } from 'ts-deepmerge'
+import {
+  create as _create,
+  Mutate,
+  StateCreator,
+  StoreApi,
+  StoreMutatorIdentifier,
+  UseBoundStore
+} from 'zustand'
+import {
+  AnyObj,
+  DeepPartial,
+  FromEntries,
+  hasOwn,
+  isFunction,
+  isNil,
+  isObject,
+  isTruthy,
+  omit,
+  Reverse,
+  TupleToUnion
+} from './shared'
+
+type AnyStateCreator = StateCreator<any, any, any, any>
 
 type AnyMiddleware = (
-  initializer: StateCreator<any, any, any, any>,
+  initializer: AnyStateCreator,
   options?: any
-) => StateCreator<any, any, any, any>
+) => AnyStateCreator
+
+type MiddlewareAndOptions = [AnyMiddleware, unknown]
+type MiddlewareOrOptions = AnyMiddleware | MiddlewareAndOptions
 
 type SerializeMiddlewareKeys<
   M extends AnyMiddleware[],
@@ -35,13 +56,6 @@ type SerializeMiddlewareKeys<
     : never
   : Result
 
-type Reverse<T extends unknown[], R extends unknown[] = []> = T extends [
-  infer S,
-  ...infer Rest
-]
-  ? Reverse<Rest, [S, ...R]>
-  : R
-
 type InferOptions<
   M extends AnyMiddleware,
   Target extends unknown[] = [
@@ -50,8 +64,8 @@ type InferOptions<
       ? unknown extends Options
         ? never
         : NonNullable<Options> extends object
-        ? Partial<NonNullable<Options>>
-        : never
+          ? Partial<NonNullable<Options>>
+          : never
       : never
   ]
 > = Target[1] extends never ? M : Target
@@ -96,17 +110,11 @@ type HasCorrectMiddlewareOptions<M extends MiddlewareOrOptions[]> = Extract<
     [K in keyof M]: M[K] extends AnyMiddleware
       ? true
       : M[K] extends InferOptions<ExtractMiddleware<M[K]>>
-      ? true
-      : PrintErrorMessage<M[K]>
+        ? true
+        : PrintErrorMessage<M[K]>
   }>,
   string
 >
-
-type DeepPartial<T> = {
-  [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K]
-}
-
-type MiddlewareOrOptions = AnyMiddleware | [AnyMiddleware, unknown]
 
 interface CreateWithMiddlewares<M extends AnyMiddleware[]> {
   <
@@ -154,23 +162,15 @@ interface CreateWithMiddlewares<M extends AnyMiddleware[]> {
   ) => UseBoundStore<Mutate<StoreApi<T>, Mos>>
 }
 
-export type ArrayElement<A> = A extends readonly (infer T)[] ? T : never
-
-type Cast<X, Y> = X extends Y ? X : Y
-
-type FromEntries<T> = T extends [infer Key, any][]
-  ? { [K in Cast<Key, string>]: Extract<ArrayElement<T>, [K, any]>[1] }
-  : { [key in string]: any }
-
 type MakeMiddlewareOptionsRecord<M extends AnyMiddleware[]> = FromEntries<{
   [K in keyof M]: InferOptions<M[K]> extends AnyMiddleware
     ? never
     : InferOptions<M[K]> extends [infer _, infer Options]
-    ? [ExtractMiddlewareName<M[K]>, Options]
-    : never
+      ? [ExtractMiddlewareName<M[K]>, Options]
+      : never
 }>
 
-interface CreateInstance {
+interface Configure {
   <
     Raw extends MiddlewareOrOptions[],
     MaybeError = HasCorrectMiddlewareOptions<Raw>
@@ -181,17 +181,73 @@ interface CreateInstance {
     : MaybeError
 }
 
-const configureImpl = <T>(
-  middlewares: any[],
-  creator: StateCreator<T, [], []>
-) => {
-  return create<T>(
-    middlewares.reduceRight<any>((acc, curr) => {
-      return curr(acc)
-    }, creator)
+const isOptionsWithCreator = (
+  raw: unknown
+): raw is AnyObj & { impl: AnyStateCreator } =>
+  isObject(raw) && hasOwn(raw, 'impl')
+
+const isOptionsWithoutCreator = (raw: unknown): raw is Omit<AnyObj, 'impl'> =>
+  isObject(raw) && !hasOwn(raw, 'impl')
+
+function extractMiddlewareAndOptions(
+  middlewareOrOpts: MiddlewareOrOptions
+): MiddlewareAndOptions {
+  if (isFunction(middlewareOrOpts)) {
+    return [middlewareOrOpts, null]
+  }
+
+  return middlewareOrOpts
+}
+
+function pipeMiddlewares(
+  options: AnyObj,
+  middlewares: MiddlewareAndOptions[],
+  creator: AnyStateCreator
+) {
+  return _create(
+    middlewares.reduceRight(
+      (acc, [middleware]) => middleware(acc, options[middleware.name]),
+      creator
+    )
   )
 }
 
-export const configure = (<M extends unknown[]>(...middlewares: M) =>
-  <T>(creator: StateCreator<T, [], []>) =>
-    configureImpl(middlewares, creator)) as CreateInstance
+export const configure = ((...rawMiddlewares: MiddlewareOrOptions[]) => {
+  const middlewares = rawMiddlewares
+    .filter(isTruthy)
+    .map(extractMiddlewareAndOptions)
+
+  let options = middlewares.reduce<AnyObj>((acc, [middleware, options]) => {
+    if (isObject(options)) {
+      acc[middleware.name] = options
+    }
+
+    return acc
+  }, {})
+
+  function createPipe(raw: unknown) {
+    if (isFunction(raw)) {
+      return pipeMiddlewares(options, middlewares, raw)
+    }
+
+    if (isOptionsWithCreator(raw)) {
+      options = merge(options, omit(raw, 'impl'))
+
+      return pipeMiddlewares(options, middlewares, raw.impl)
+    }
+  }
+
+  return (raw: unknown) => {
+    if (isNil(raw)) {
+      return createPipe
+    }
+
+    if (isOptionsWithoutCreator(raw)) {
+      options = merge(options, raw)
+
+      return createPipe
+    }
+
+    return createPipe(raw)
+  }
+}) as Configure

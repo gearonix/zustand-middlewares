@@ -1,12 +1,22 @@
-module.exports = {
-  ...require('@grnx-utils/eslint')({
-    enableImports: false,
-    ext: {
-      '@typescript-eslint/member-delimiter-style': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      'no-unused-vars': 'error'
-    },
-    ignore: ['*.yaml', 'LICENSE', '.gitignore', '*.md', 'preview', '*.json'],
-    root: __dirname
-  })
-}
+const { presets, configure } = require('eslint-kit')
+
+module.exports = configure({
+  root: __dirname,
+  presets: [
+    presets.imports({}),
+    presets.typescript({ tsconfig: 'tsconfig.json', root: __dirname }),
+    presets.prettier({
+      singleQuote: true,
+      trailingComma: 'none',
+      endOfLine: 'auto',
+      semi: false
+    }),
+    presets.node({})
+  ],
+  extend: {
+    ignorePatterns: ['*.yaml', '*.json', '.eslintrc.cjs', 'dist', '*.md'],
+    rules: {
+      'import/extensions': 'error'
+    }
+  }
+})

@@ -1,18 +1,23 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "lib": ["ESNext"],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "resolveJsonModule": true,
+    "target": "esnext",
     "strict": true,
-    "strictNullChecks": true,
+    "jsx": "react-jsx",
     "esModuleInterop": true,
-    "skipDefaultLibCheck": true,
-    "skipLibCheck": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true /* FIXME remove this once vite fixes it */,
+    "allowImportingTsExtensions": true,
+    "noUncheckedIndexedAccess": true,
+    "alwaysStrict": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitAny": true,
+    "noEmit": true,
     "baseUrl": ".",
     "paths": {
       "@lib": ["src/index.ts"]
     }
-  }
+  },
+  "include": ["src/**/*", "test/**/*", "preview/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

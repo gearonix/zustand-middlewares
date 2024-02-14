@@ -38,7 +38,7 @@
   "scripts": {
     "build": "unbuild",
     "dev": "unbuild --stub",
-    "lint": "eslint **/*.ts",
+    "lint": "eslint",
     "prepublishOnly": "nr build",
     "release": "bumpp && npm publish",
     "start": "esno src/index.ts",
@@ -48,11 +48,10 @@
   },
   "devDependencies": {
     "@antfu/ni": "^0.21.12",
-    "@antfu/utils": "^0.7.7",
-    "@grnx-utils/eslint": "^3.0.2",
     "@types/node": "^20.10.7",
     "bumpp": "^9.2.1",
     "eslint": "^8.56.0",
+    "eslint-kit": "^10.15.0",
     "esno": "^4.0.0",
     "lint-staged": "^15.2.0",
     "pnpm": "^8.14.0",
@@ -71,6 +70,9 @@
     "pre-commit": "pnpm lint-staged"
   },
   "lint-staged": {
-    "*": "eslint --fix **/*.ts"
+    "*": "eslint"
+  },
+  "dependencies": {
+    "ts-deepmerge": "^7.0.0"
   }
 }
