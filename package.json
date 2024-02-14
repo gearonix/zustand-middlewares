@@ -1,18 +1,17 @@
 {
-  "name": "pkg-placeholder",
+  "name": "zustand-middlewares",
   "type": "module",
   "version": "0.0.0",
   "packageManager": "pnpm@8.14.0",
-  "description": "_description_",
-  "author": "Anthony Fu <anthonyfu117@hotmail.com>",
+  "description": "",
+  "author": "Uzhanin Egor <egor.uzhanin@gmail.com>",
   "license": "MIT",
-  "funding": "https://github.com/sponsors/antfu",
-  "homepage": "https://github.com/antfu/pkg-placeholder#readme",
+  "homepage": "https://github.com/gearonix/zustand-middlewares#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/antfu/pkg-placeholder.git"
+    "url": "git+https://github.com/gearonix/zustand-middlewares.git"
   },
-  "bugs": "https://github.com/antfu/pkg-placeholder/issues",
+  "bugs": "https://github.com/gearonix/zustand-middlewares/issues",
   "keywords": [],
   "sideEffects": false,
   "exports": {
@@ -39,7 +38,7 @@
   "scripts": {
     "build": "unbuild",
     "dev": "unbuild --stub",
-    "lint": "eslint .",
+    "lint": "eslint **/*.ts",
     "prepublishOnly": "nr build",
     "release": "bumpp && npm publish",
     "start": "esno src/index.ts",
@@ -48,9 +47,9 @@
     "prepare": "simple-git-hooks"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^2.6.2",
     "@antfu/ni": "^0.21.12",
     "@antfu/utils": "^0.7.7",
+    "@grnx-utils/eslint": "^3.0.2",
     "@types/node": "^20.10.7",
     "bumpp": "^9.2.1",
     "eslint": "^8.56.0",
@@ -68,6 +67,6 @@
     "pre-commit": "pnpm lint-staged"
   },
   "lint-staged": {
-    "*": "eslint --fix"
+    "*": "eslint --fix **/*.ts"
   }
 }
