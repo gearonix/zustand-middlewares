@@ -6,7 +6,7 @@ module.exports = {
       '@typescript-eslint/no-unused-vars': 'off',
       'no-unused-vars': 'error'
     },
-    ignore: ['*.md', '*.json', '*.yaml', 'LICENSE'],
+    ignore: ['*.yaml', 'LICENSE', '.gitignore', '*.md', 'preview', '*.json'],
     root: __dirname
   })
 }
