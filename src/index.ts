@@ -47,11 +47,11 @@ type SerializeMiddlewareKeys<
     >(
       initializer: StateCreator<
         T,
-        [...Mps, [infer MutatorValue extends StoreMutatorIdentifier, never]],
+        [...Mps, [infer MutatorValue extends StoreMutatorIdentifier, infer _]],
         Mcs
       >,
-      options?: Record<string, unknown>
-    ) => StateCreator<T, Mps, [[StoreMutatorIdentifier, never], ...Mcs]>
+      options?: any
+    ) => StateCreator<T, Mps, [[StoreMutatorIdentifier, any], ...Mcs]>
     ? SerializeMiddlewareKeys<Rest, [...Result, [MutatorValue, never]]>
     : never
   : Result
@@ -96,14 +96,8 @@ type ExtractMiddlewareName<
 
 type PrintErrorMessage<
   M extends MiddlewareOrOptions,
-  Extracted extends AnyMiddleware = ExtractMiddleware<M>,
-  Serialized extends [
-    StoreMutatorIdentifier,
-    never
-  ][] = SerializeMiddlewareKeys<[Extracted]>
-> = Serialized[0] extends [infer Property extends string, ...infer _]
-  ? WrongOptionsException<Property>
-  : never
+  Extracted extends AnyMiddleware = ExtractMiddleware<M>
+> = WrongOptionsException<ExtractMiddlewareName<Extracted>>
 
 type HasCorrectMiddlewareOptions<M extends MiddlewareOrOptions[]> = Extract<
   TupleToUnion<{
@@ -116,7 +110,7 @@ type HasCorrectMiddlewareOptions<M extends MiddlewareOrOptions[]> = Extract<
   string
 >
 
-interface CreateWithMiddlewares<M extends AnyMiddleware[]> {
+interface PipeMiddlewares<M extends AnyMiddleware[]> {
   <
     T,
     Mos extends [StoreMutatorIdentifier, unknown][] = Reverse<
@@ -177,7 +171,7 @@ interface Configure {
   >(
     ...middlewares: Raw
   ): [MaybeError] extends [never]
-    ? CreateWithMiddlewares<ExtractMiddlewares<Raw>>
+    ? PipeMiddlewares<ExtractMiddlewares<Raw>>
     : MaybeError
 }
 
@@ -189,15 +183,10 @@ const isOptionsWithCreator = (
 const isOptionsWithoutCreator = (raw: unknown): raw is Omit<AnyObj, 'impl'> =>
   isObject(raw) && !hasOwn(raw, 'impl')
 
-function extractMiddlewareAndOptions(
+const extractMiddlewareAndOptions = (
   middlewareOrOpts: MiddlewareOrOptions
-): MiddlewareAndOptions {
-  if (isFunction(middlewareOrOpts)) {
-    return [middlewareOrOpts, null]
-  }
-
-  return middlewareOrOpts
-}
+): MiddlewareAndOptions =>
+  isFunction(middlewareOrOpts) ? [middlewareOrOpts, null] : middlewareOrOpts
 
 function pipeMiddlewares(
   options: AnyObj,
